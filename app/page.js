@@ -1,7 +1,15 @@
 "use client";
 import { useState, useEffect } from "react";
 import { firestore } from "@/firebase";
-import { collection, query, getDocs } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  query,
+  getDocs,
+  setDoc,
+  deleteDoc,
+  getDoc,
+} from "firebase/firestore";
 import {
   AppBar,
   Toolbar,
@@ -38,14 +46,7 @@ const theme = createTheme({
 
 export default function ShoppingList() {
   const [pantry, setPantry] = useState([]);
-  // const [items, setItems] = useState([
-  //   "Tomato",
-  //   "Potato",
-  //   "Onion",
-  //   "Garlic",
-  //   "Ginger",
-  //   "Carrot",
-  // ]);
+  const [itemName, setItemName] = useState("");
 
   const recommendedItems = [
     {
@@ -77,19 +78,54 @@ export default function ShoppingList() {
     },
   ];
 
+  const updatePantry = async () => {
+    const snapshoot = query(collection(firestore, "pantry"));
+    const docs = await getDocs(snapshoot);
+    const pantryList = [];
+    docs.forEach((doc) => {
+      pantryList.push({ name: doc.id, ...doc.data() });
+    });
+    console.log(pantryList);
+    setPantry(pantryList);
+  };
+
   useEffect(() => {
-    const updatePantry = async () => {
-      const snapshoot = query(collection(firestore, "pantry"));
-      const docs = await getDocs(snapshoot);
-      const pantryList = [];
-      docs.forEach((doc) => {
-        pantryList.push(doc.id);
-      });
-      console.log(pantryList);
-      setPantry(pantryList);
-    };
     updatePantry();
-  });
+  }, []);
+
+  const addItem = async (item) => {
+    const docRef = doc(collection(firestore, "pantry"), item);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const { count } = docSnap.data();
+      await setDoc(docRef, { count: count + 1 });
+      await updatePantry();
+    } else {
+      await setDoc(docRef, { count: 1 });
+    }
+    await updatePantry();
+  };
+
+  const removeItem = async (item) => {
+    const docRef = doc(collection(firestore, "pantry"), item);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const { count } = docSnap.data();
+      if (count === 1) {
+        await deleteDoc(docRef);
+      }
+    } else {
+      await setDoc(docRef, { count: count - 1 });
+    }
+    await updatePantry();
+  };
+
+  const handleKeyPress = (event) => {
+    if (event.key === "Enter") {
+      addItem(itemName);
+      setItemName("");
+    }
+  };
 
   return (
     <ThemeProvider theme={theme}>
@@ -112,47 +148,28 @@ export default function ShoppingList() {
         >
           <Grid item xs={12} md={8}>
             <Box>
-              {/* <Button
-                startIcon={<AddIcon />}
-                variant="contained"
-                color="primary"
-                fullWidth
-                sx={{ marginBottom: "20px" }}
-              >
-                Add an item
-              </Button> */}
-
-              {/* <Input
-                placeholder="Add item"
-                fullWidth
-                disableUnderline
-                sx={{
-                  border: "1px solid gray",
-                  marginBottom: "5px",
-                  padding: "5px",
-                  paddingRight: "40px",
-                  borderRadius: "10px",
-                }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Button color="primary" startIcon={<AddIcon />}></Button>
-                    </InputAdornment>
-                  ),
-                }}
-              /> */}
               <TextField
                 variant="outlined"
                 InputProps={{
                   endAdornment: (
                     <InputAdornment position="end">
-                      <Button color="primary" startIcon={<AddIcon />}></Button>
+                      <Button
+                        color="primary"
+                        startIcon={<AddIcon />}
+                        onClick={() => {
+                          addItem(itemName);
+                          setItemName("");
+                        }}
+                      ></Button>
                     </InputAdornment>
                   ),
                 }}
                 fullWidth
                 sx={{ marginBottom: "10px" }}
                 placeholder="Add Item here"
+                value={itemName}
+                onChange={(e) => setItemName(e.target.value)}
+                onKeyPress={handleKeyPress}
               />
 
               <Stack
@@ -178,7 +195,14 @@ export default function ShoppingList() {
                 }}
               >
                 <List>
-                  {pantry.map((item, index) => (
+                  <Typography
+                    variant="h6"
+                    align="center"
+                    sx={{ color: "black", fontWeight: "600" }}
+                  >
+                    Your Pantry Items:
+                  </Typography>
+                  {pantry.map((name, count, index) => (
                     <ListItem
                       key={index}
                       sx={{ display: "flex", justifyContent: "space-between" }}
@@ -189,7 +213,9 @@ export default function ShoppingList() {
                           alignItems: "center",
                         }}
                       >
-                        <DeleteOutlineIcon sx={{ color: "red" }} />
+                        <Button onClick={() => removeItem(name)}>
+                          <DeleteOutlineIcon sx={{ color: "red" }} />
+                        </Button>
                         <Typography
                           sx={{
                             color: "black",
@@ -197,10 +223,10 @@ export default function ShoppingList() {
                             marginLeft: "10px",
                           }}
                         >
-                          {item.charAt(0).toUpperCase() + item.slice(1)}
+                          {name.charAt(0).toUpperCase() + name.slice(1)}
                         </Typography>
                       </Box>
-                      <Button>1</Button>
+                      <Button>{count}</Button>
                     </ListItem>
                   ))}
                 </List>
