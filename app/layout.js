@@ -1,14 +1,6 @@
 import { Inter, Roboto } from "next/font/google";
 import "./globals.css";
-import { firebaseConfig } from "@/firebase";
-
-const inter = Inter({ subsets: ["latin"] });
-
-const roboto = Roboto({
-  weight: "400",
-  subsets: ["latin"],
-  display: "swap",
-});
+import { UserProvider } from "./context/UserContext";
 
 export const metadata = {
   title: "Create Next App",
@@ -18,8 +10,8 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} ${roboto.className}`}>
-        {children}
+      <body>
+        <UserProvider>{children}</UserProvider>
       </body>
     </html>
   );
