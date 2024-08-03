@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
-import { firestore } from "../../firebase.js";
+// import { auth, firestore } from "../../firebase.js";
+// import { firestore } from "../../firebase";
 import {
   collection,
   doc,
@@ -35,7 +36,7 @@ import AddCircleIcon from "@mui/icons-material/AddCircle";
 import RemoveCircleIcon from "@mui/icons-material/RemoveCircle";
 import "../globals.css";
 import { inter, roboto_mono, kanit } from "../fonts.js";
-import { useUser } from "../context/UserContext.js";
+import { UserAuth } from "../context/UserContext.js";
 
 const theme = createTheme({
   typography: {
@@ -44,17 +45,28 @@ const theme = createTheme({
 });
 
 export default function ShoppingList() {
-  const { user } = useUser();
+  const { user, firestore, loading } = UserAuth();
+  console.log(user);
+  const [userDetails, setUserDetails] = useState(null);
   const [pantry, setPantry] = useState([]);
   const [itemName, setItemName] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [recipes, setRecipes] = useState("");
 
   const updatePantry = async () => {
-    const snapshoot = query(collection(firestore, "pantry"));
-    const docs = await getDocs(snapshoot);
+    console.log(user);
+    const pantryCollectionRef = collection(
+      firestore,
+      "users",
+      user.uid,
+      "pantry"
+    );
+    const pantryQuery = query(pantryCollectionRef);
+    const querySnapshot = await getDocs(pantryQuery);
+    // const docs = await getDocs(snapshoot);
     const pantryList = [];
-    docs.forEach((doc) => {
+    querySnapshot.forEach((doc) => {
+      console.log(doc.id, " => ", doc.data());
       pantryList.push({ name: doc.id, ...doc.data() });
     });
     console.log(pantryList);
@@ -62,11 +74,24 @@ export default function ShoppingList() {
   };
 
   useEffect(() => {
-    updatePantry();
-  }, []);
+    if (!loading && user) {
+      updatePantry(user);
+    }
+  }, [user, loading]);
 
-  const addItem = async (item, userId) => {
-    const docRef = doc(collection(firestore, "users", userId, "pantry"), item);
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!user) {
+    return <div>Please log in to access the pantry.</div>;
+  }
+
+  const addItem = async (item) => {
+    const docRef = doc(
+      collection(firestore, "users", user.uid, "pantry"),
+      item
+    );
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
       const { count } = docSnap.data();
@@ -78,16 +103,22 @@ export default function ShoppingList() {
     await updatePantry();
   };
 
-  const incrementItem = async (item, userId) => {
-    const docRef = doc(collection(firestore, "users", userId, "pantry"), item);
+  const incrementItem = async (item) => {
+    const docRef = doc(
+      collection(firestore, "users", user.uid, "pantry"),
+      item
+    );
     const docSnap = await getDoc(docRef);
     const { count } = docSnap.data();
     await setDoc(docRef, { count: count + 1 });
     await updatePantry();
   };
 
-  const removeItem = async (item, userId) => {
-    const docRef = doc(collection(firestore, "users", userId, "pantry"), item);
+  const removeItem = async (item) => {
+    const docRef = doc(
+      collection(firestore, "users", user.uid, "pantry"),
+      item
+    );
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
       await deleteDoc(docRef);
@@ -95,8 +126,11 @@ export default function ShoppingList() {
     await updatePantry();
   };
 
-  const decrementItem = async (item, userId) => {
-    const docRef = doc(collection(firestore, "users", userId, "pantry"), item);
+  const decrementItem = async (item) => {
+    const docRef = doc(
+      collection(firestore, "users", user.uid, "pantry"),
+      item
+    );
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
       const { count } = docSnap.data();
@@ -111,7 +145,7 @@ export default function ShoppingList() {
 
   const handleKeyPress = (event) => {
     if (event.key === "Enter") {
-      addItem(itemName);
+      addItem(itemName, user.uid);
       setItemName("");
     }
   };
@@ -122,6 +156,14 @@ export default function ShoppingList() {
 
   const formatIngredients = (ingredients) => {
     return ingredients.map((item) => item.name).join(", ");
+  };
+
+  const parseRecipes = (text) => {
+    // Use a regex to split the text at each instance of `**`, while preserving the recipes
+    const recipes = text.split(/\n\s*\*\*/).filter(Boolean);
+
+    // Return the processed recipes with title headers
+    return recipes.map((recipe) => recipe.trim());
   };
 
   const OPENROUTER_API_KEY =
@@ -144,7 +186,7 @@ export default function ShoppingList() {
             messages: [
               {
                 role: "user",
-                content: `I have the following ingredients in my pantry: ${ingredientsString}. Can you suggest some recipes I can make with these ingredients?.`,
+                content: `I have the following ingredients in my pantry: ${ingredientsString}. Can you suggest some recipes I can make with these ingredients? Begin each recipe on a new line. For each recipe, write down the ingredients needed, and then the recipe itself.`,
               },
             ],
           }),
@@ -153,20 +195,22 @@ export default function ShoppingList() {
 
       const data = await response.json();
       console.log(data.choices[0].message.content);
-      const recipes = JSON.parse(data.choices[0].message.content);
-      console.log(recipes);
+      const parseRecipe = parseRecipes(data.choices[0].message.content);
+      const recipes = parseRecipe.map((recipe) => recipe.trim());
       setRecipes(recipes);
+      // setRecipes(data.choices[0].message.content);
+
       // setRecipes(data.choices[0].message.content);
     } catch (error) {
       console.error("Error fetching recipe suggestions:", error);
     }
   };
 
-  useEffect(() => {
-    if (pantry.length > 0) {
-      fetchRecipeSuggestions();
-    }
-  }, [pantry]);
+  // useEffect(() => {
+  //   if (pantry.length > 0) {
+  //     fetchRecipeSuggestions();
+  //   }
+  // }, [pantry]);
 
   if (!user) {
     return <div>Loading...</div>;
@@ -333,7 +377,35 @@ export default function ShoppingList() {
             <Box>
               <Card sx={{ marginBottom: 2 }}>
                 <CardContent>
-                  <Typography variant="h6">Recipe Suggestions</Typography>
+                  <Typography variant="h6" sx={{ marginBottom: "10px" }}>
+                    Recipe Suggestions
+                  </Typography>
+                  <Button variant="contained" onClick={fetchRecipeSuggestions}>
+                    Ask AI For Recipe Suggestions
+                  </Button>
+                  {recipes ? (
+                    <Box
+                      sx={{
+                        marginTop: "1rem",
+                        height: "30rem",
+                        overflowY: "scroll",
+                      }}
+                    >
+                      {recipes.map((recipe, index) => (
+                        <Box key={index} style={{ marginBottom: "1rem" }}>
+                          <Box>
+                            <Typography variant="h5">
+                              {recipe.split("\n")[0]}
+                            </Typography>{" "}
+                            <Typography variant="p">
+                              {recipe.slice(recipe.indexOf("\n") + 1)}
+                            </Typography>{" "}
+                            {/* Rest of the recipe */}
+                          </Box>
+                        </Box>
+                      ))}
+                    </Box>
+                  ) : null}
                 </CardContent>
               </Card>
             </Box>

@@ -1,6 +1,8 @@
 import { Inter, Roboto } from "next/font/google";
 import "./globals.css";
 import { UserProvider } from "./context/UserContext";
+import Homepage from "./page";
+import ShoppingList from "./pantry/page";
 
 export const metadata = {
   title: "Create Next App",
