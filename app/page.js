@@ -14,7 +14,6 @@ import { useRouter } from "next/navigation";
 import GoogleLoginButton from "./components/GoogleLoginButton";
 import { UserAuth } from "./context/UserContext";
 import { inter, roboto_mono, kanit } from "./fonts.js";
-// import foodImage from "./public/food.jpeg";
 
 const theme = createTheme({
   typography: {
@@ -23,9 +22,6 @@ const theme = createTheme({
 });
 
 const Homepage = () => {
-  // const { setUser } = useUser();
-  const router = useRouter();
-  const [checkingAuthState, setCheckingAuthState] = useState(false);
   const { googleLogin } = UserAuth();
 
   return (

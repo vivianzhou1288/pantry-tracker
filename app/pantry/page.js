@@ -38,6 +38,7 @@ import RemoveCircleIcon from "@mui/icons-material/RemoveCircle";
 import "../globals.css";
 import { inter, roboto_mono, kanit } from "../fonts.js";
 import { UserAuth } from "../context/UserContext.js";
+import Loading from "../components/LoadingPage.js";
 
 const theme = createTheme({
   typography: {
@@ -94,7 +95,7 @@ export default function ShoppingList() {
   }, [user, loading]);
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <Loading />;
   }
 
   if (!user) {
@@ -216,23 +217,14 @@ export default function ShoppingList() {
       const parseRecipe = parseRecipes(data.choices[0].message.content);
       setRecipes(parseRecipe);
       setAILoading(false);
-      // setRecipes(data.choices[0].message.content);
-
-      // setRecipes(data.choices[0].message.content);
     } catch (error) {
       console.log("Error fetching recipe suggestions:", error.message);
       setAILoading(false);
     }
   };
 
-  // useEffect(() => {
-  //   if (pantry.length > 0) {
-  //     fetchRecipeSuggestions();
-  //   }
-  // }, [pantry]);
-
   if (!user) {
-    return <div>Loading...</div>;
+    return <Loading />;
   }
 
   return (
