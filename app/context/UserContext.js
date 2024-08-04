@@ -60,6 +60,8 @@ export const UserProvider = ({ children }) => {
 
   const logOut = () => {
     signOut(auth);
+    setUser(null);
+    router.push("/");
   };
 
   useEffect(() => {

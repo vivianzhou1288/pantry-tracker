@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 // import { auth, firestore } from "../../firebase.js";
 // import { firestore } from "../../firebase";
+import ReplyLoading from "../components/ReplyLoader";
 import {
   collection,
   doc,
@@ -26,9 +27,11 @@ import {
   CssBaseline,
   createTheme,
   ThemeProvider,
-  Input,
+  Popover,
   TextField,
   InputAdornment,
+  Avatar,
+  MenuItem,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
@@ -45,13 +48,26 @@ const theme = createTheme({
 });
 
 export default function ShoppingList() {
-  const { user, firestore, loading } = UserAuth();
-  console.log(user);
-  const [userDetails, setUserDetails] = useState(null);
+  const { user, firestore, loading, logOut } = UserAuth();
+  const [searchLoading, setSearchLoading] = useState(false);
   const [pantry, setPantry] = useState([]);
   const [itemName, setItemName] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [recipes, setRecipes] = useState("");
+  const [recipes, setRecipes] = useState([]);
+  const [aiLoading, setAILoading] = useState(false);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [open, setOpen] = useState(false);
+  const handlePopoverOpen = (event) => {
+    setAnchorEl(event.currentTarget);
+    setOpen(true);
+  };
+
+  const handlePopoverClose = () => {
+    setAnchorEl(null);
+    setOpen(false);
+  };
+
+  // const open = Boolean(anchorEl);
 
   const updatePantry = async () => {
     console.log(user);
@@ -158,6 +174,11 @@ export default function ShoppingList() {
     return ingredients.map((item) => item.name).join(", ");
   };
 
+  const handleSearch = (event) => {
+    setSearchQuery(event.target.value);
+    setSearchLoading(true);
+  };
+
   const parseRecipes = (text) => {
     // Use a regex to split the text at each instance of `**`, while preserving the recipes
     const recipes = text.split(/\n\s*\*\*/).filter(Boolean);
@@ -171,6 +192,7 @@ export default function ShoppingList() {
 
   const fetchRecipeSuggestions = async () => {
     const ingredientsString = formatIngredients(pantry);
+    setAILoading(true);
 
     try {
       const response = await fetch(
@@ -196,13 +218,14 @@ export default function ShoppingList() {
       const data = await response.json();
       console.log(data.choices[0].message.content);
       const parseRecipe = parseRecipes(data.choices[0].message.content);
-      const recipes = parseRecipe.map((recipe) => recipe.trim());
-      setRecipes(recipes);
+      setRecipes(parseRecipe);
+      setAILoading(false);
       // setRecipes(data.choices[0].message.content);
 
       // setRecipes(data.choices[0].message.content);
     } catch (error) {
-      console.error("Error fetching recipe suggestions:", error);
+      console.log("Error fetching recipe suggestions:", error.message);
+      setAILoading(false);
     }
   };
 
@@ -225,9 +248,56 @@ export default function ShoppingList() {
             <Typography variant="h6" sx={{ flexGrow: 1 }}>
               Shopping List
             </Typography>
-            <Button color="inherit" sx={{ fontFamily: roboto_mono }}>
-              {user.displayName}
+            <Button
+              color="inherit"
+              sx={{ fontFamily: roboto_mono }}
+              onMouseEnter={handlePopoverOpen}
+              onMouseLeave={() => {
+                // Delay closing to allow entering the popover
+                setTimeout(() => {
+                  if (!open) handlePopoverClose();
+                }, 200);
+              }}
+              s
+            >
+              <Box sx={{ display: "flex", alignItems: "center" }}>
+                <Avatar
+                  alt="Profile Picture"
+                  src={user.photoURL}
+                  sx={{ marginRight: "10px", width: 30, height: 30 }}
+                />
+                <Typography variant="p">{user.displayName}</Typography>
+              </Box>
             </Button>
+            <Popover
+              id="mouse-over-popover"
+              sx={{
+                pointerEvents: "none",
+              }}
+              open={open}
+              anchorEl={anchorEl}
+              anchorOrigin={{
+                vertical: "bottom",
+                horizontal: "center",
+              }}
+              transformOrigin={{
+                vertical: "top",
+                horizontal: "center",
+              }}
+              onClose={handlePopoverClose}
+              disableRestoreFocus
+            >
+              <Box
+                sx={{
+                  p: 1,
+                  pointerEvents: "auto",
+                }}
+                onMouseEnter={() => clearTimeout(handlePopoverClose)}
+                onMouseLeave={handlePopoverClose}
+              >
+                <MenuItem onClick={logOut}>Logout</MenuItem>
+              </Box>
+            </Popover>
           </Toolbar>
         </AppBar>
         <Grid
@@ -295,11 +365,11 @@ export default function ShoppingList() {
                     <TextField
                       placeholder="Search for item"
                       value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onChange={handleSearch}
                       fullWidth
                     />
                   </Box>
-                  {filteredPantry.length === 0 ? (
+                  {searchLoading && filteredPantry.length === 0 ? (
                     <Typography
                       variant="h6"
                       align="center"
@@ -377,17 +447,27 @@ export default function ShoppingList() {
             <Box>
               <Card sx={{ marginBottom: 2 }}>
                 <CardContent>
-                  <Typography variant="h6" sx={{ marginBottom: "10px" }}>
-                    Recipe Suggestions
-                  </Typography>
-                  <Button variant="contained" onClick={fetchRecipeSuggestions}>
-                    Ask AI For Recipe Suggestions
-                  </Button>
-                  {recipes ? (
+                  <Box align="center">
+                    <Typography variant="h6" sx={{ marginBottom: "10px" }}>
+                      Recipe Suggestions
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      onClick={fetchRecipeSuggestions}
+                      disabled={pantry.length === 0}
+                    >
+                      Ask AI For Recipe Suggestions
+                    </Button>
+                  </Box>
+                  {aiLoading ? (
+                    <Box sx={{ marginTop: "1rem" }}>
+                      <ReplyLoading />
+                    </Box>
+                  ) : (
                     <Box
                       sx={{
                         marginTop: "1rem",
-                        height: "30rem",
+                        maxHeight: "30rem",
                         overflowY: "scroll",
                       }}
                     >
@@ -405,7 +485,11 @@ export default function ShoppingList() {
                         </Box>
                       ))}
                     </Box>
-                  ) : null}
+                  )}
+
+                  {/* {recipes ? ( */}
+
+                  {/* ) : null} */}
                 </CardContent>
               </Card>
             </Box>

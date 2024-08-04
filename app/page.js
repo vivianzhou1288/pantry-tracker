@@ -1,114 +1,81 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { Button, Typography, Container, Box } from "@mui/material";
-import { auth, firestore, googleAuthProvider } from "../firebase";
 import {
-  signInWithPopup,
-  signOut,
-  onAuthStateChanged,
-  setPersistence,
-  browserLocalPersistence,
-} from "firebase/auth";
+  Button,
+  Typography,
+  Container,
+  Box,
+  Grid,
+  createTheme,
+  ThemeProvider,
+  CssBaseline,
+} from "@mui/material";
 import { useRouter } from "next/navigation";
-import { doc, setDoc, getDoc } from "firebase/firestore";
 import GoogleLoginButton from "./components/GoogleLoginButton";
 import { UserAuth } from "./context/UserContext";
-import { toast } from "react-toastify";
+import { inter, roboto_mono, kanit } from "./fonts.js";
+
+const theme = createTheme({
+  typography: {
+    fontFamily: kanit.style.fontFamily,
+  },
+});
 
 const Homepage = () => {
   // const { setUser } = useUser();
   const router = useRouter();
   const [checkingAuthState, setCheckingAuthState] = useState(false);
   const { googleLogin } = UserAuth();
-  // const [user, setUser] = useState(null);
-  // const googleAuth = new GoogleAuthProvider();
-
-  // useEffect(() => {
-  //   const clearAuthState = async () => {
-  //     await signOut(auth);
-  //     setCheckingAuthState(false);
-  //   };
-  //   clearAuthState();
-  // }, []);
-
-  // const login = async () => {
-  //   try {
-  //     const result = await signInWithPopup(auth, googleAuthProvider);
-  //     console.log(result);
-  //     const user = result.user;
-  //     if (user) {
-  //       const userDocRef = doc(firestore, "users", user.uid);
-  //       const userDocSnap = await getDoc(userDocRef);
-  //       if (!userDocSnap.exists()) {
-  //         await setDoc(userDocRef, {
-  //           uid: user.uid,
-  //           email: user.email,
-  //           displayName: user.displayName,
-  //           photoURL: user.photoURL,
-  //         });
-  //       }
-  //       toast.success("User logged in Successfully", {
-  //         position: "top-center",
-  //       });
-  //       setUser(user);
-  //       router.push("/pantry");
-  //     }
-  //   } catch (error) {
-  //     console.log(error.message);
-  //     toast.error("Login failed. Please try again.", {
-  //       position: "top-center",
-  //     });
-  //   }
-  // };
-
-  // const googleLogin = () => {
-  //   setPersistence(auth, browserLocalPersistence)
-  //     .then(() => {
-  //       login();
-  //     })
-  //     .catch((error) => {
-  //       console.log(error.message);
-  //     });
-  // };
-
-  // useEffect(() => {
-  //   const unsubscribe = onAuthStateChanged(auth, (user) => {
-  //     if (user) {
-  //       setUser(user);
-  //       router.push("/pantry");
-  //     } else {
-  //       setUser(null);
-  //       setCheckingAuthState(false);
-  //     }
-  //   });
-
-  //   return () => unsubscribe();
-  // }, [router]);
-
-  // if (checkingAuthState) {
-  //   return <div>Loading...</div>; // You can replace this with a loader component if you want
-  // }
 
   return (
-    <Container
-      maxWidth="xl"
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        height: "100vh", // Full viewport height
-      }}
-    >
-      <Box>
-        <Typography variant="h4" gutterBottom>
-          Welcome to Food Pantry Tracker.
-        </Typography>
-        <Box>
-          <GoogleLoginButton onClick={googleLogin} />
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Container
+        maxWidth="xl"
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
+        <Box textAlign="center">
+          <Typography
+            variant="h4"
+            gutterBottom
+            sx={{ textAlign: "center", marginBottom: "10px" }}
+          >
+            Welcome to the Tracker.
+          </Typography>
+          <Typography sx={{ textAlign: "center", marginBottom: "20px" }}>
+            Keep track of what is in your pantry with the Tracker. Get recipe
+            suggestions based on what is your pantry.
+          </Typography>
+          <Box sx={{ marginBottom: "20px" }}>
+            <GoogleLoginButton onClick={googleLogin} />
+          </Box>
+          {/* <Grid container spacing={2} justifyContent="center">
+          <Grid item xs={12} md={4}>
+            <Typography variant="h6">
+              Keep track of what is in your pantry
+            </Typography>
+            <Typography variant="p">
+              Add items into a list to keep track of your pantry
+            </Typography>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Typography variant="h6">Get Recipe Suggestions</Typography>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Typography variant="h6">
+              
+            </Typography>
+          </Grid>
+        </Grid> */}
         </Box>
-      </Box>
-    </Container>
+      </Container>
+    </ThemeProvider>
   );
 };
 
