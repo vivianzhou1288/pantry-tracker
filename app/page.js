@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import GoogleLoginButton from "./components/GoogleLoginButton";
 import { UserAuth } from "./context/UserContext";
 import { inter, roboto_mono, kanit } from "./fonts.js";
+// import foodImage from "./public/food.jpeg";
 
 const theme = createTheme({
   typography: {
@@ -33,11 +34,18 @@ const Homepage = () => {
       <Container
         maxWidth="xl"
         sx={{
+          backgroundImage:
+            'url("https://i.pinimg.com/564x/50/93/fa/5093faa7f2774ccb048fb74fc7b85edb.jpg")',
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
           height: "100vh",
+          backgroundColor: "white",
+          color: "black",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
         }}
       >
         <Box textAlign="center">

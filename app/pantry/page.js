@@ -1,7 +1,5 @@
 "use client";
 import { useState, useEffect } from "react";
-// import { auth, firestore } from "../../firebase.js";
-// import { firestore } from "../../firebase";
 import ReplyLoading from "../components/ReplyLoader";
 import {
   collection,
@@ -180,15 +178,13 @@ export default function ShoppingList() {
   };
 
   const parseRecipes = (text) => {
-    // Use a regex to split the text at each instance of `**`, while preserving the recipes
     const recipes = text.split(/\n\s*\*\*/).filter(Boolean);
 
     // Return the processed recipes with title headers
     return recipes.map((recipe) => recipe.trim());
   };
 
-  const OPENROUTER_API_KEY =
-    "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";
+  const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
   const fetchRecipeSuggestions = async () => {
     const ingredientsString = formatIngredients(pantry);
@@ -246,7 +242,7 @@ export default function ShoppingList() {
         <AppBar position="static" sx={{ backgroundColor: "#AFD9E4" }}>
           <Toolbar>
             <Typography variant="h6" sx={{ flexGrow: 1 }}>
-              Shopping List
+              My Pantry
             </Typography>
             <Button
               color="inherit"
@@ -339,7 +335,7 @@ export default function ShoppingList() {
                   overflowY: "scroll",
                   scrollbarColor: "lightgray black",
                   scrollbarWidth: "thin", // For Firefox
-                  scrollbarColor: "lightgray black", // For Firefox
+                  scrollbarColor: "lightgray gray", // For Firefox
                   "&::-webkit-scrollbar": {
                     width: "12px", // Width of the scrollbar
                   },
@@ -469,6 +465,20 @@ export default function ShoppingList() {
                         marginTop: "1rem",
                         maxHeight: "30rem",
                         overflowY: "scroll",
+                        scrollbarColor: "lightgray black",
+                        scrollbarWidth: "thin", // For Firefox
+                        scrollbarColor: "lightgray gray", // For Firefox
+                        "&::-webkit-scrollbar": {
+                          width: "12px", // Width of the scrollbar
+                        },
+                        "&::-webkit-scrollbar-track": {
+                          background: "lightgray", // Background color of the scrollbar track
+                        },
+                        "&::-webkit-scrollbar-thumb": {
+                          backgroundColor: "black", // Color of the scrollbar thumb
+                          borderRadius: "6px", // Border radius for the thumb
+                          border: "3px solid lightgray", // Optional: border around the thumb
+                        },
                       }}
                     >
                       {recipes.map((recipe, index) => (
